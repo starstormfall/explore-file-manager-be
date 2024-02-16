@@ -2,26 +2,42 @@ package com.explorer.filemanager.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path="api/v1/FileOperations")
 public class FileOperationController {
 
-    // read
+    // READ
     @GetMapping
-    public String readFolder() {
+    // request params: String action; String path; Boolean showHiddenItems; FileManagerDirectoryContent data
+    public String readFolder(@RequestParam()) {
         return "Read Folder";
     }
-    // create
+    // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
 
-    // delete
+    // CREATE
+    // request params: String action; String path; String name; FileManagerDirectoryContent data
+    // response: FileManagerDirectoryContent[] files; ErrorDetails error;
 
-    // rename
 
-    // search
+    // RENAME
+    // request params: String action; String path; String name; String newName; FileManagerDirectoryContent data
+    // response: FileManagerDirectoryContent[] files; ErrorDetails error;
 
-    // details
+
+    // DELETE
+    // request params: String action; String path; String[] names; FileManagerDirectoryContent data
+    // response: FileManagerDirectoryContent[] files; ErrorDetails error;
+
+    // DETAILS
+    // request params: String action; String path; String[] names; FileManagerDirectoryContent data
+    // response: FileManagerDirectoryContent details; ErrorDetails error;
+
+    // SEARCh
+
+
 
     // copy
 
