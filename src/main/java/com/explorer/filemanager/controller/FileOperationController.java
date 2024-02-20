@@ -1,11 +1,9 @@
 package com.explorer.filemanager.controller;
 
-import com.explorer.filemanager.data.FileContent;
-import com.explorer.filemanager.data.FileRequestParams;
-import com.explorer.filemanager.data.FileResponse;
+import com.explorer.filemanager.model.FileContent;
+import com.explorer.filemanager.dto.FileRequestParams;
+import com.explorer.filemanager.dto.FileResponse;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
 
 enum Action {
     READ,

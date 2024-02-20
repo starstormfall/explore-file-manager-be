@@ -1,5 +1,6 @@
-package com.explorer.filemanager.data;
+package com.explorer.filemanager.dto;
 
+import com.explorer.filemanager.model.FileContent;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;

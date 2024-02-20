@@ -1,4 +1,4 @@
-package com.explorer.filemanager.data;
+package com.explorer.filemanager.dto;
 
 public class AccessRules {
 
