@@ -1,0 +1,26 @@
+###################################
+# SWAGGER UI CONFIG
+###################################
+springdoc:
+  api-docs.path: /v3/api-docs/openapi3.json
+  swagger-ui:
+    path: /api-docs
+
+
+###################################
+# MONGO CONFIG
+###################################
+spring:data.mongodb:
+  host: localhost
+  port: 27017
+  database: products
+  username: root
+  password: password
+
+###################################
+# MINIO CONFIG
+###################################
+minio.config:
+  url: http://localhost:9000
+  accessKey: minioadmin
+  secretKey: minioadmin
