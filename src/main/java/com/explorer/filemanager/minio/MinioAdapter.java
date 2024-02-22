@@ -1,5 +1,6 @@
-package com.explorer.filemanager.utils;
+package com.explorer.filemanager.minio;
 
+import com.explorer.filemanager.dto.MinioObjectDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.*;
 import io.minio.errors.*;
@@ -7,14 +8,15 @@ import io.minio.messages.Bucket;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 @Service
 public class MinioAdapter {
@@ -28,18 +30,9 @@ public class MinioAdapter {
     }
 
     /**
-     *  creates bucket
+     * Creates new bucket
      * @param bucketName
      * @return
-     * @throws ServerException
-     * @throws InsufficientDataException
-     * @throws ErrorResponseException
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
-     * @throws InvalidResponseException
-     * @throws XmlParserException
-     * @throws InternalException
      */
     public boolean createBucket(String bucketName) {
         try {
@@ -59,13 +52,21 @@ public class MinioAdapter {
     }
 
     /**
-     * To get list of buckets
+     * Lists all buckets
      * @return
      */
     // list Bucket
-    public List<Bucket> getAllBuckets() {
+    public List<BucketInfo> getAllBuckets() {
         try {
-            return minioClient.listBuckets();
+
+            List<BucketInfo> bucketInfoList = new ArrayList<>();
+
+            List<Bucket> bucketList = minioClient.listBuckets();
+            for (Bucket bucket : bucketList) {
+                bucketInfoList.add(new BucketInfo(bucket.name(), bucket.creationDate()));
+            }
+
+            return bucketInfoList;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -73,7 +74,7 @@ public class MinioAdapter {
     }
 
     /**
-     * To upload object
+     * Uploads object with file (binary)
      * @param bucketName
      * @param objectName
      * @param fileName
@@ -81,22 +82,51 @@ public class MinioAdapter {
      * @param file
      * @return
      */
-    public Map<String, String> uploadFile(String bucketName, String objectName,  String fileName, String contentType, MultipartFile file) {
+    public MinioObjectDetails uploadFile(String bucketName, String objectName,  String fileName, String contentType, MultipartFile file) {
         try {
             UploadObjectArgs uArgs = UploadObjectArgs.builder()
                 .bucket(bucketName)
-                .object(file.getOriginalFilename())
+                .object(objectName)
+                .filename(file.getOriginalFilename())
                 .contentType(file.getContentType())
                 .build();
 
             ObjectWriteResponse resp = minioClient.uploadObject(uArgs);
 
-            Map<String, String> objectDetails = new HashMap<>();
-            objectDetails.put("objectName", resp.object());
-            objectDetails.put("objectETag", resp.etag());
-            objectDetails.put("objectVersionId", resp.versionId());
+            MinioObjectDetails details = new MinioObjectDetails();
+            details.setName(resp.object());
+            details.setETag(resp.etag());
+            details.setVersionId(resp.versionId());
 
-            return objectDetails;
+            return details;
+
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+
+    }
+
+    /**
+     * Creates new empty folder/directory
+     * @param bucketName
+     * @param objectPath
+     * @return
+     */
+    public MinioObjectDetails createFolderObject(String bucketName, String objectPath) {
+        try {
+            ObjectWriteResponse resp = minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectPath)
+                            .stream(new ByteArrayInputStream(new byte[] {}), 0, -1)
+                            .build());
+
+            MinioObjectDetails details = new MinioObjectDetails();
+            details.setName(resp.object());
+            details.setETag(resp.etag());
+            details.setVersionId(resp.versionId());
+
+            return details;
 
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -105,8 +135,9 @@ public class MinioAdapter {
     }
 
 
-
     // download object
+
+
 
 
 }

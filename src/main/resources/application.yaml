@@ -10,12 +10,14 @@ springdoc:
 ###################################
 # MONGO CONFIG
 ###################################
-spring:data.mongodb:
+spring.data.mongodb:
   host: localhost
   port: 27017
-  database: products
+  database: Product
   username: root
   password: password
+  authentication-database: admin
+
 
 ###################################
 # MINIO CONFIG

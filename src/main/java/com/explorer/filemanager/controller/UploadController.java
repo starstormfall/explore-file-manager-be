@@ -1,6 +1,6 @@
 package com.explorer.filemanager.controller;
 
-import com.explorer.filemanager.utils.MinioAdapter;
+import com.explorer.filemanager.minio.MinioAdapter;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 enum UploadAction {
     save,
