@@ -1,4 +1,4 @@
-package com.explorer.filemanager.dto;
+package com.explorer.filemanager.pojo;
 
 import com.explorer.filemanager.model.FileContent;
 import jakarta.annotation.Nullable;

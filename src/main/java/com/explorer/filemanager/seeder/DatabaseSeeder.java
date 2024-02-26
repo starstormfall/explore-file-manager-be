@@ -40,6 +40,12 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             // root folder
             ObjectId id0 = new ObjectId();
+            ObjectId id1 = new ObjectId();
+            ObjectId id2 = new ObjectId();
+            ObjectId id3 = new ObjectId();
+
+
+
             FileContent rootFolder = new FileContent(
                     id0.toString(),
                     "Files",
@@ -49,11 +55,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                     true,
                     false,
                     0,
+                    "",
                     ""
             );
 
             // nested folder in first folder
-            ObjectId id3 = new ObjectId();
             FileContent firstNestedFolder = new FileContent(
                     id3.toString(),
                     "first-nested-folder",
@@ -63,11 +69,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                     false,
                     false,
                     0,
-                    ""
+                    "",
+                    id1.toString() // parentId
             );
 
             // first folder
-            ObjectId id1 = new ObjectId();
             FileContent firstFolder = new FileContent(
                     id1.toString(),
                     "first-folder",
@@ -77,12 +83,12 @@ public class DatabaseSeeder implements CommandLineRunner {
                     true,
                     false,
                     0,
-                    ""
+                    "",
+                    id0.toString() // parentId
             );
             firstFolder.setData(firstNestedFolder);
 
             // second folder
-            ObjectId id2 = new ObjectId();
             FileContent secondFolder = new FileContent(
                     id2.toString(),
                     "second-folder",
@@ -92,7 +98,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                     false,
                     false,
                     0,
-                    ""
+                    "",
+                    id0.toString() // parentId
             );
 
             FileContent[] files = {

@@ -1,4 +1,4 @@
-package com.explorer.filemanager.dto;
+package com.explorer.filemanager.pojo;
 
 import lombok.Getter;
 import lombok.Setter;

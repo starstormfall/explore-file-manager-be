@@ -1,13 +1,12 @@
 package com.explorer.filemanager.service;
 
-import com.explorer.filemanager.dto.MinioObjectDetails;
+import com.explorer.filemanager.pojo.MinioObjectDetails;
 import com.explorer.filemanager.repository.FileContentRepository;
 import com.explorer.filemanager.minio.MinioAdapter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service

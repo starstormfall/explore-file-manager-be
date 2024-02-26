@@ -1,7 +1,6 @@
 package com.explorer.filemanager.service;
 
-import com.explorer.filemanager.dto.MinioObjectDetails;
-import org.springframework.web.multipart.MultipartFile;
+import com.explorer.filemanager.pojo.MinioObjectDetails;
 
 public interface FileOperationService {
 

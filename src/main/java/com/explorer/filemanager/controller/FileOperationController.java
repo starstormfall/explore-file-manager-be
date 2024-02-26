@@ -1,16 +1,12 @@
 package com.explorer.filemanager.controller;
 
 import com.explorer.filemanager.model.FileContent;
-import com.explorer.filemanager.dto.FileRequestParams;
-import com.explorer.filemanager.dto.FileResponse;
+import com.explorer.filemanager.pojo.FileRequestParams;
+import com.explorer.filemanager.pojo.FileResponse;
 import com.explorer.filemanager.repository.FileContentRepository;
 import com.explorer.filemanager.service.FileOperationService;
-import com.github.javafaker.Faker;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.concurrent.TimeUnit;
 
 enum Action {
     read,
@@ -26,11 +22,10 @@ enum Action {
 
 
 @RestController
-@RequestMapping(path="api/workspaces/{workspaceId}/v1/FileOperations")
+@RequestMapping(path="api/v1/workspaces/{workspaceId}/v1/FileOperations")
 public class FileOperationController {
 
     private FileOperationService fileOperationService;
-
 
     @Autowired
     public FileOperationController(FileOperationService fileOperationService) {
@@ -48,18 +43,12 @@ public class FileOperationController {
         String path = requestParams.getPath(); // full path from root e.g. /first-level-folder/ | /first-level/second-level/
         FileContent data = requestParams.getData();
 
-
-
-
-
         switch(action) {
 
             // reads from mongo
             case read:
                 // request params: String action; String path; Boolean showHiddenItems; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
-
-
                 break;
 
             /** creates folder only, not the same as UPLOAD */
@@ -68,7 +57,6 @@ public class FileOperationController {
                 // request params: String path; String name; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent[] files; ErrorDetails error;
                 fileOperationService.createFolder(bucketName, path);
-
                 break;
 
             // updates MINIO first then create document/metadata in MONGO

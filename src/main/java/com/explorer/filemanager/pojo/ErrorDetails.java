@@ -1,4 +1,4 @@
-package com.explorer.filemanager.dto;
+package com.explorer.filemanager.pojo;
 
 public class ErrorDetails {
 
