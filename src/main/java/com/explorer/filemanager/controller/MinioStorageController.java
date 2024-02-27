@@ -40,6 +40,11 @@ public class MinioStorageController {
     }
 
 
+    @GetMapping("/bucket/{bucketName}/object/{objectPath}/")
+    public String listObject(@PathVariable("bucketName") String bucketName, @RequestParam("objectPath") String objectPath) {
+       return null;
+    }
+
 
 
 }

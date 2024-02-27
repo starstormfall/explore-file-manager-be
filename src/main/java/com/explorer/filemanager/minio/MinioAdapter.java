@@ -14,9 +14,7 @@ import java.util.List;
 
 @Service
 public class MinioAdapter {
-
     private MinioClient minioClient;
-
     private ObjectMapper mapper;
     public MinioAdapter(MinioClient minioClient, ObjectMapper mapper) {
         this.minioClient = minioClient;

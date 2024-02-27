@@ -13,7 +13,7 @@ public class FileRequestParams {
 
     String path;
 
-    FileContent data;
+    FileContent[] data;
 
     @Nullable
     Boolean showHiddenItems;

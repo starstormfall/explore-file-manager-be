@@ -26,3 +26,14 @@ minio.config:
   url: http://localhost:9000
   accessKey: minioadmin
   secretKey: minioadmin
+
+###################################
+# CORS CONFIG
+###################################
+web:
+  cors:
+    allowed-origins: "http://localhost:5173"
+    allowed-methods: GET, POST, PATCH, PUT, DELETE, OPTIONS, HEAD
+    max-age: 3600
+    allowed-headers: "Requestor-Type"
+    exposed-headers: "X-Get-Header"

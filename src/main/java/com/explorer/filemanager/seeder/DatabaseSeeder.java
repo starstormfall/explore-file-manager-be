@@ -34,24 +34,26 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             mongoTemplate.createCollection("FileContent");
             log.info("No existing FileContent collection. Initialized FileContent collection successfully!");
-
-//          Seed data
             repository.deleteAll();
 
-            // root folder
+            // Seed data
+
             ObjectId id0 = new ObjectId();
             ObjectId id1 = new ObjectId();
             ObjectId id2 = new ObjectId();
             ObjectId id3 = new ObjectId();
 
+            String workspaceName = faker.cat().breed();
+            String firstFolderName = faker.cat().name();
+            String secondFolderName = faker.cat().name();
 
-
+            // root folder
             FileContent rootFolder = new FileContent(
                     id0.toString(),
-                    "Files",
+                    "Workspace: "+ workspaceName,
                     faker.date().past(5, TimeUnit.DAYS).toString(),
                     faker.date().past(1, TimeUnit.DAYS).toString(),
-                    "",
+                    "/"+workspaceName+"/",
                     true,
                     false,
                     0,
@@ -62,10 +64,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             // nested folder in first folder
             FileContent firstNestedFolder = new FileContent(
                     id3.toString(),
-                    "first-nested-folder",
+                    "Nested",
                     faker.date().past(5, TimeUnit.DAYS).toString(),
                     faker.date().past(1, TimeUnit.DAYS).toString(),
-                    "\\\\first-folder\\\\",
+                    "/"+workspaceName+"/"+firstFolderName+"/"+"Nested",
                     false,
                     false,
                     0,
@@ -76,10 +78,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             // first folder
             FileContent firstFolder = new FileContent(
                     id1.toString(),
-                    "first-folder",
+                    faker.cat().name(),
                     faker.date().past(5, TimeUnit.DAYS).toString(),
                     faker.date().past(1, TimeUnit.DAYS).toString(),
-                    "\\\\",
+                    "/"+workspaceName+"/"+firstFolderName,
                     true,
                     false,
                     0,
@@ -91,10 +93,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             // second folder
             FileContent secondFolder = new FileContent(
                     id2.toString(),
-                    "second-folder",
+                    faker.cat().name(),
                     faker.date().past(5, TimeUnit.DAYS).toString(),
                     faker.date().past(1, TimeUnit.DAYS).toString(),
-                    "\\\\",
+                    "/"+workspaceName+"/"+secondFolderName,
                     false,
                     false,
                     0,

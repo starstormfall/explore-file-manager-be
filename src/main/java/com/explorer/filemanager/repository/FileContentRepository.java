@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FileContentRepository extends MongoRepository<FileContent, ObjectId> {
 
-    FileContent findByFilterPathEquals(String filterPath);
+    FileContent[] findByParentId(String parentId);
 
-    FileContent[] findAllByFilterPathEquals(String filerPath);
+
 }

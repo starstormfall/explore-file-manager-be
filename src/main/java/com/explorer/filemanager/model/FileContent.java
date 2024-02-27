@@ -6,16 +6,19 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Document("FileContent")
 
 /**
  * known as FileManagerDirectoryContent by Syncfusion React File Manager
  */
-public class FileContent {
+public class FileContent implements Serializable {
 
 
     @Id
