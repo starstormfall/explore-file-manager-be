@@ -12,8 +12,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FileResponse {
-
-
     @Nullable // used only for READ, SEARCH, null for other operations
     FileContent cwd;
 

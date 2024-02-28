@@ -59,14 +59,15 @@ public class FileOperationController {
                 // request params: String action; String path; Boolean showHiddenItems; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
 
-                /** path is "/" and data is empty for root folder **/
+                /** for root folder: path is "/" and data is empty  **/
                 if (path.equals("/") && data.length == 0 ) {
                     response.setCwd(mongoMetadataService.getCwd(workspaceId));
                     response.setFiles(mongoMetadataService.getFilesByParentId(workspaceId));
                 } else {
-                    FileContent cwd = mongoMetadataService.getCwd(data[0].getId());
+                    String fileId = data[0].getId();
+                    response.setCwd(mongoMetadataService.getCwd(fileId));
+                    response.setFiles(mongoMetadataService.getFilesByParentId(fileId));
                 }
-
 
                 break;
 

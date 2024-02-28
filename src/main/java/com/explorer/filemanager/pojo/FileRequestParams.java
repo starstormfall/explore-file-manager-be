@@ -8,21 +8,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class FileRequestParams {
-
     String action;
-
     String path;
-
     FileContent[] data;
-
-    @Nullable
-    Boolean showHiddenItems;
-
-
-    String newName;
-
-    String[] names;
-
-
-
+    @Nullable Boolean showHiddenItems;
+    @Nullable String newName;
+    @Nullable String[] names;
 }

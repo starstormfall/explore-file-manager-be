@@ -18,7 +18,7 @@ import java.io.Serializable;
 /**
  * known as FileManagerDirectoryContent by Syncfusion React File Manager
  */
-public class FileContent implements Serializable {
+public class FileContent  {
 
 
     @Id
@@ -32,7 +32,7 @@ public class FileContent implements Serializable {
     @NonNull private Boolean isFile; // whether item is file or folder
     @NonNull private  Number size; // file size e.g. 49792
     @NonNull private  String type; // file extension e.g. ".png",
-    @NonNull private String parentId;
+    @NonNull private String parentId; // for root folder, parentId would be bucketId
 
     // --- Optional --- //
     private AccessRules permission;
