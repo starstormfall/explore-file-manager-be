@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 public class FileRequestParams {
     String action;
-    String path;
+    String path;  // full path to current cwd
     FileContent[] data;
     @Nullable Boolean showHiddenItems;
     @Nullable String newName;

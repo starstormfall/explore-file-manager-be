@@ -10,7 +10,4 @@ public interface FileContentRepository extends MongoRepository<FileContent, Obje
 
     FileContent[] findByParentId(String parentId);
 
-    FileContent findByMongoId(String fileId);
-
-
 }

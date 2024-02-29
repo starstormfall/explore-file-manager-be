@@ -22,9 +22,9 @@ public class FileContent  {
 
 
     @Id
-    @NonNull private String mongoId;
+    @NonNull private String mongoId;  // unique identifier of file/folder
     // --- CORE --- //
-    @NonNull private String id; // to be same as file name
+    @NonNull private String id; // to be same as file name - used by frontend to generate path
     @NonNull private String name; // file name
     @NonNull private String dateCreated; //UTC Date string
     @NonNull private String dateModified; //UTC Date string
@@ -48,5 +48,6 @@ public class FileContent  {
     private String[] renameFiles; //details of renamed item
     private String path;
     private String previousName;
+
 //    @Nullable private List<MultipartFile> uploadFiles; // files that are to be uploaded to minio > IList<IFormFile> (binary)
 }

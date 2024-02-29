@@ -1,6 +1,7 @@
 package com.explorer.filemanager.controller;
 
 import com.explorer.filemanager.model.FileContent;
+import com.explorer.filemanager.pojo.ErrorDetails;
 import com.explorer.filemanager.pojo.FileRequestParams;
 import com.explorer.filemanager.pojo.FileResponse;
 import com.explorer.filemanager.service.FileOperationService;
@@ -38,8 +39,8 @@ public class FileOperationController {
         this.fileOperationService = fileOperationService;
         this.mongoMetadataService = mongoMetadataService;
         this.transactionService = transactionService;
-
     }
+
 
     @PostMapping
     public FileResponse fileOperation(@PathVariable("workspaceId") String workspaceId, @RequestBody FileRequestParams requestParams) throws Exception {
@@ -49,7 +50,7 @@ public class FileOperationController {
         /** initialize common values */
         String bucketName = workspaceId;
         Action action = Action.valueOf(requestParams.getAction());
-        String path = requestParams.getPath(); // full path from root e.g. /first-folder-id/ | /first-folder-id/nested-folder-id/
+        String path = requestParams.getPath(); // full path from root to cwd
         FileContent[] data = requestParams.getData();
 
         switch(action) {
@@ -59,9 +60,8 @@ public class FileOperationController {
                 // request params: String action; String path; Boolean showHiddenItems; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
 
-                /** for root folder: path is "/" and data is empty  **/
+                /** for root folder: path is "/" and data is empty, use workspaceId to find all the child folders  **/
                 if (path.equals("/") && data.length == 0 ) {
-
                     response.setCwd(mongoMetadataService.getCwd(workspaceId));
                     response.setFiles(mongoMetadataService.getFilesByParentId(workspaceId));
                 } else {
@@ -69,19 +69,29 @@ public class FileOperationController {
                     response.setCwd(mongoMetadataService.getCwd(fileId));
                     response.setFiles(mongoMetadataService.getFilesByParentId(fileId));
                 }
-
                 break;
 
-            /** creates folder only, not the same as UPLOAD */
-            /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
-            // updates MINIO first then create document/metadata in MONGO
+
+            /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO - to create path in MINIO and new doc in MONGO atomically **/
             case create:
                 // request params: String path; String name; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent[] files; ErrorDetails error;
 
-                String parentId = data[0].getId();
+                String parentId = data[0].getMongoId();
                 String newFolderName = requestParams.getName();
-                transactionService.createFolderTransaction(workspaceId, newFolderName, parentId, path);
+                response.setCwd(null);
+
+                try {
+                    FileContent newFolderData = mongoMetadataService.createFolder(newFolderName, parentId, path);
+                    response.setFiles(new FileContent[]{newFolderData});
+                } catch (Exception exception){
+                    log.error(exception.getLocalizedMessage());
+                    response.setError(new ErrorDetails(
+                            "400",
+                            String.format("A file or folder with the name %s already exists", newFolderName),
+                            null
+                    ));
+                }
                 break;
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
@@ -94,6 +104,7 @@ public class FileOperationController {
             case delete:
                 // request params: String action; String path; String[] names; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent[] files; ErrorDetails error;
+
 
 
             /** READS METADATA FROM MONGO ONLY **/
