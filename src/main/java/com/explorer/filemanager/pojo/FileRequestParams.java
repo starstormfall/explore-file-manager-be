@@ -14,4 +14,5 @@ public class FileRequestParams {
     @Nullable Boolean showHiddenItems;
     @Nullable String newName;
     @Nullable String[] names;
+    @Nullable String name; // used for action 'create'
 }

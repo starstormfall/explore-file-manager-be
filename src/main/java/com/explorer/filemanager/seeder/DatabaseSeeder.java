@@ -50,10 +50,11 @@ public class DatabaseSeeder implements CommandLineRunner {
             // root folder
             FileContent rootFolder = new FileContent(
                     id0.toString(),
-                    "Workspace: "+ workspaceName,
+                    workspaceName,
+                    workspaceName,
                     faker.date().past(5, TimeUnit.DAYS).toString(),
                     faker.date().past(1, TimeUnit.DAYS).toString(),
-                    "/"+workspaceName+"/",
+                    "/",
                     true,
                     false,
                     0,
@@ -65,9 +66,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             FileContent firstNestedFolder = new FileContent(
                     id3.toString(),
                     "Nested",
+                    "Nested",
                     faker.date().past(5, TimeUnit.DAYS).toString(),
                     faker.date().past(1, TimeUnit.DAYS).toString(),
-                    "/"+workspaceName+"/"+firstFolderName+"/"+"Nested",
+                    "/"+workspaceName+"/"+firstFolderName+"/",
                     false,
                     false,
                     0,
@@ -78,10 +80,11 @@ public class DatabaseSeeder implements CommandLineRunner {
             // first folder
             FileContent firstFolder = new FileContent(
                     id1.toString(),
-                    faker.cat().name(),
+                    firstFolderName,
+                    firstFolderName,
                     faker.date().past(5, TimeUnit.DAYS).toString(),
                     faker.date().past(1, TimeUnit.DAYS).toString(),
-                    "/"+workspaceName+"/"+firstFolderName,
+                    "/"+workspaceName+"/",
                     true,
                     false,
                     0,
@@ -93,10 +96,11 @@ public class DatabaseSeeder implements CommandLineRunner {
             // second folder
             FileContent secondFolder = new FileContent(
                     id2.toString(),
-                    faker.cat().name(),
+                    secondFolderName,
+                    secondFolderName,
                     faker.date().past(5, TimeUnit.DAYS).toString(),
                     faker.date().past(1, TimeUnit.DAYS).toString(),
-                    "/"+workspaceName+"/"+secondFolderName,
+                    "/"+workspaceName+"/",
                     false,
                     false,
                     0,

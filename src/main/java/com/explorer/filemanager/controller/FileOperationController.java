@@ -4,13 +4,11 @@ import com.explorer.filemanager.model.FileContent;
 import com.explorer.filemanager.pojo.FileRequestParams;
 import com.explorer.filemanager.pojo.FileResponse;
 import com.explorer.filemanager.service.FileOperationService;
+import com.explorer.filemanager.minio.MongoAndMinioTransactionService;
 import com.explorer.filemanager.service.MongoMetadataService;
-import com.github.javafaker.Faker;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 enum Action {
     read,
@@ -22,27 +20,29 @@ enum Action {
     copy,
     move,
 }
-
+@Slf4j
 @RestController
 @RequestMapping(path="api/v1/workspaces/{workspaceId}/FileOperations")
 public class FileOperationController {
-
     private FileOperationService fileOperationService;
-
     private MongoMetadataService mongoMetadataService;
+    private MongoAndMinioTransactionService transactionService;
 
 
     @Autowired
     public FileOperationController(
             FileOperationService fileOperationService,
-            MongoMetadataService mongoMetadataService
+            MongoMetadataService mongoMetadataService,
+            MongoAndMinioTransactionService transactionService
     ) {
         this.fileOperationService = fileOperationService;
         this.mongoMetadataService = mongoMetadataService;
+        this.transactionService = transactionService;
+
     }
 
     @PostMapping
-    public FileResponse fileOperation(@PathVariable("workspaceId") String workspaceId, @RequestBody FileRequestParams requestParams) {
+    public FileResponse fileOperation(@PathVariable("workspaceId") String workspaceId, @RequestBody FileRequestParams requestParams) throws Exception {
 
         FileResponse response = new FileResponse();
 
@@ -61,10 +61,11 @@ public class FileOperationController {
 
                 /** for root folder: path is "/" and data is empty  **/
                 if (path.equals("/") && data.length == 0 ) {
+
                     response.setCwd(mongoMetadataService.getCwd(workspaceId));
                     response.setFiles(mongoMetadataService.getFilesByParentId(workspaceId));
                 } else {
-                    String fileId = data[0].getId();
+                    String fileId = data[0].getMongoId();
                     response.setCwd(mongoMetadataService.getCwd(fileId));
                     response.setFiles(mongoMetadataService.getFilesByParentId(fileId));
                 }
@@ -77,10 +78,14 @@ public class FileOperationController {
             case create:
                 // request params: String path; String name; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent[] files; ErrorDetails error;
-                fileOperationService.createFolder(bucketName, path);
+
+                String parentId = data[0].getId();
+                String newFolderName = requestParams.getName();
+                transactionService.createFolderTransaction(workspaceId, newFolderName, parentId, path);
                 break;
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
+            // YX
             case rename:
                 // request params: String action; String path; String name; String newName; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent[] files; ErrorDetails error;
@@ -102,11 +107,13 @@ public class FileOperationController {
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
+            // YX
             case copy:
                 // request params: String action; String path; String[] names; String targetPath; FileManagerDirectoryContent data; String[] renameFiles
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
+            // YX
             case move:
                 // request params: String action; String path; String[] names; String targetPath; FileManagerDirectoryContent data; String[] renameFiles
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;

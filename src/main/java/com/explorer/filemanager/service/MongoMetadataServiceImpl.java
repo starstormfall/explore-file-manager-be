@@ -7,6 +7,10 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 @Slf4j
 @Service
 public class MongoMetadataServiceImpl implements MongoMetadataService {
@@ -39,4 +43,26 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
         FileContent[] files = repository.findByParentId(parentId);
         return files;
     }
+
+    @Override
+    public String createFolder(String folderName, String parentId, String path) {
+
+        ObjectId id = new ObjectId();
+        FileContent newFolder = new FileContent(
+                id.toString(),
+                folderName,
+                folderName,
+                Instant.now().toString(),
+                Instant.now().toString(),
+                path + id + "/",
+                false,
+                false,
+                0,
+                "",
+                parentId // parentId
+        );
+
+        return String.format("New folder created: %s", folderName);
+    };
+
 }

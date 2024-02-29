@@ -22,8 +22,9 @@ public class FileContent  {
 
 
     @Id
-    @NonNull private String id;
+    @NonNull private String mongoId;
     // --- CORE --- //
+    @NonNull private String id; // to be same as file name
     @NonNull private String name; // file name
     @NonNull private String dateCreated; //UTC Date string
     @NonNull private String dateModified; //UTC Date string
