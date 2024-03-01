@@ -10,7 +10,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -38,6 +40,11 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             // Seed data
 
+
+            List<ObjectId> objectIdList = new ArrayList<>(13);
+            for (int i = 0; i < 13; i++) {
+                objectIdList.add(new ObjectId());
+            }
             ObjectId id0 = new ObjectId();
             ObjectId id1 = new ObjectId();
             ObjectId id2 = new ObjectId();

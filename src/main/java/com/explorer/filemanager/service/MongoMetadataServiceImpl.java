@@ -11,6 +11,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Slf4j
@@ -50,7 +52,8 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
     }
 
     /**
-     * creates a new folder entry
+     * creates a new document (folder entry)
+     * updates parent folder to hasChild so that nested folder can show up in frontend tree view
      * @param folderName
      * @param parentId
      * @param path
@@ -83,10 +86,55 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
             );
 
             FileContent newFolderData = repository.save(newFolder);
+
+            FileContent parentFolder = repository.findById(new ObjectId(parentId)).get();
+            parentFolder.setHasChild(true);
+            repository.save(parentFolder);
+
             return newFolderData;
         } else {
             throw new Exception("Folder with same name exists");
         }
-    };
+    }
+
+    /**
+     * Delete files given a list of filenames
+     * Also deletes the nested folders and files
+     * @param files
+     * @return list of remaining files with same parentId after deletion
+     * @throws Exception
+     */
+    @Override
+    public FileContent[] deleteFiles(FileContent[] files) throws Exception {
+
+        // all files will share same parentId because only files under the same parent folder can be deleted together
+        String parentId = files[0].getParentId();
+        List<String> fileNames = new ArrayList<>();
+        List<String> fileIds = new ArrayList<>();
+
+        for (FileContent file : files) {
+            fileNames.add(file.getName());
+            fileIds.add(file.getMongoId());
+        }
+
+        log.info(fileNames.toString());
+        log.info(fileIds.toString());
+
+        Criteria criteria = new Criteria().orOperator(
+            // get selected files with matching fileName and matching parentId
+            Criteria.where("name").in(fileNames).andOperator(Criteria.where("parentId").is(parentId)),
+            // get child of selected files with child's parentId that matches the mongoId of the files to be deleted
+            Criteria.where("parentId").in(fileIds)
+        );
+
+        Query query = new Query(criteria);
+
+        mongoTemplate.findAllAndRemove(query, FileContent.class);
+
+        FileContent[] existingFilesAfterDeletion = repository.findByParentId(parentId);
+        return existingFilesAfterDeletion;
+
+    }
+
 
 }

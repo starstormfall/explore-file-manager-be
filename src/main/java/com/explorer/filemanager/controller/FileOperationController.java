@@ -53,6 +53,7 @@ public class FileOperationController {
         String path = requestParams.getPath(); // full path from root to cwd
         FileContent[] data = requestParams.getData();
 
+
         switch(action) {
 
             /** READS METADATA FROM MONGO ONLY **/
@@ -76,12 +77,11 @@ public class FileOperationController {
             case create:
                 // request params: String path; String name; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent[] files; ErrorDetails error;
-
-                String parentId = data[0].getMongoId();
                 String newFolderName = requestParams.getName();
-                response.setCwd(null);
+                String parentId = data[0].getMongoId(); // mongoId of parent folder
 
                 try {
+
                     FileContent newFolderData = mongoMetadataService.createFolder(newFolderName, parentId, path);
                     response.setFiles(new FileContent[]{newFolderData});
                 } catch (Exception exception){
@@ -104,6 +104,23 @@ public class FileOperationController {
             case delete:
                 // request params: String action; String path; String[] names; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent[] files; ErrorDetails error;
+
+
+                try {
+                    FileContent[] existingFiles = mongoMetadataService.deleteFiles(data);
+                    response.setFiles(existingFiles);
+                } catch (Exception exception){
+                    log.error(exception.getLocalizedMessage());
+                    response.setError(new ErrorDetails(
+                            "400",
+                            "No files were found for deletion",
+                            null
+                    ));
+                }
+
+
+
+
 
 
 
