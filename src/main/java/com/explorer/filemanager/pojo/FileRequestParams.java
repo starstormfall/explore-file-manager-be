@@ -15,4 +15,5 @@ public class FileRequestParams {
     @Nullable String newName;
     @Nullable String[] names;
     @Nullable String name; // used for action 'create'
+    @Nullable String searchString;
 }

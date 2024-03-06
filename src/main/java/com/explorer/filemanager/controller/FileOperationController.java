@@ -63,25 +63,25 @@ public class FileOperationController {
             case read:
                 // request params: String action; String path; Boolean showHiddenItems; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
-            try {
-                /** for root folder: path is "/" and data is empty, use workspaceId to find all the child folders  **/
-                if (path.equals("/") && data.length == 0) {
-                    response.setCwd(mongoMetadataService.getCwd(workspaceId));
-                    response.setFiles(mongoMetadataService.getFilesByParentId(workspaceId));
-                } else {
-                    String fileId = data[0].getMongoId();
-                    response.setCwd(mongoMetadataService.getCwd(fileId));
-                    response.setFiles(mongoMetadataService.getFilesByParentId(fileId));
+                try {
+                    /** for root folder: path is "/" and data is empty, use workspaceId to find all the child folders  **/
+                    if (path.equals("/") && data.length == 0) {
+                        response.setCwd(mongoMetadataService.getCwd(workspaceId));
+                        response.setFiles(mongoMetadataService.getFilesByParentId(workspaceId));
+                    } else {
+                        String fileId = data[0].getMongoId();
+                        response.setCwd(mongoMetadataService.getCwd(fileId));
+                        response.setFiles(mongoMetadataService.getFilesByParentId(fileId));
+                    }
+                }   catch (Exception exception){
+                    log.error(exception.getLocalizedMessage());
+                    response.setError(new ErrorDetails(
+                            "404",
+                            String.format("A file or folder with the name %s may have recently been deleted or moved. Please refresh your browser.", data[0].getName()),
+                            null
+                    ));
                 }
-            }   catch (Exception exception){
-                log.error(exception.getLocalizedMessage());
-                response.setError(new ErrorDetails(
-                        "404",
-                        String.format("A file or folder with the name %s may have recently been deleted and no longer exists. Please refresh your browser.", data[0].getName()),
-                        null
-                ));
-            }
-            break;
+                break;
 
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO - to create path in MINIO and new doc in MONGO atomically **/
@@ -96,12 +96,21 @@ public class FileOperationController {
                     FileContent newFolderData = mongoMetadataService.createFolder(newFolderName, parentId, path);
                     response.setFiles(new FileContent[]{newFolderData});
                 } catch (Exception exception){
-                    log.error(exception.getLocalizedMessage());
-                    response.setError(new ErrorDetails(
-                            "400",
-                            String.format("A file or folder with the name %s already exists", newFolderName),
-                            null
-                    ));
+                    if (exception.getMessage() == "No value present") {
+                        response.setError(new ErrorDetails(
+                                "404",
+                                String.format("Folder %s no longer exists. Please refresh your browser.", path),
+                                null
+                        ));
+                    } else {
+                        response.setError(new ErrorDetails(
+                                "400",
+                                "Folder with same name exists.",
+                                null
+                        ));
+                    }
+
+
                 }
                 break;
 
@@ -120,7 +129,6 @@ public class FileOperationController {
                     mongoMetadataService.deleteFiles(fileNames, data);
                     response.setFiles(data);
                 } catch (Exception exception){
-                    log.error(exception.getLocalizedMessage());
                     response.setError(new ErrorDetails(
                             "400",
                             "No files were found for deletion",
@@ -164,6 +172,14 @@ public class FileOperationController {
             case search:
                 // request params: String action; String path; boolean showHiddenItems; boolean caseSensitive; String searchString; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
+
+                // cwd is the topmost folder after root i.e. Workspace/Folder
+
+                FileContent topFolder = new FileContent();
+                FileContent[] foundFiles = mongoMetadataService.searchFiles(requestParams.getSearchString(), path);
+
+                response.setCwd(topFolder);
+                response.setFiles(foundFiles);
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
             // YX

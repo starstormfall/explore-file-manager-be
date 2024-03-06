@@ -58,16 +58,29 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
      * @param parentId
      * @param path
      * @return
+     * @throws Exception (i) if parent folder no longer exists (ii) folder with same name already exists with parentId
      */
     @Override
     public FileContent createFolder(String folderName, String parentId, String path) throws Exception {
 
-        // need to check if folder with same name already exists with parentId
-        // if already exists, throw error
-        // else can create new folder
+        // checks if parent folder exists
+        FileContent parentFolder = repository.findById(new ObjectId(parentId)).get();
+
+        if (parentFolder != null) {
+            parentFolder.setHasChild(true);
+            repository.save(parentFolder);
+        } else {
+            throw new Exception(String.format("Folder %s does not exist.", path));
+        }
+
+        String folderNameLowerCase = folderName.toLowerCase();
+
+        // checks if folder with same name already exists with parentId
         Query query = new Query(
                 Criteria.where("parentId").is(parentId)
-                        .andOperator(Criteria.where("name").is(folderName)));
+                        .and("name").regex("^" + folderNameLowerCase + "$", "i"));
+
+
 
         if (mongoTemplate.findOne(query, FileContent.class) == null) {
             ObjectId id = new ObjectId();
@@ -85,12 +98,8 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
                     parentId // parentId
             );
 
+
             FileContent newFolderData = repository.save(newFolder);
-
-            FileContent parentFolder = repository.findById(new ObjectId(parentId)).get();
-            parentFolder.setHasChild(true);
-            repository.save(parentFolder);
-
             return newFolderData;
         } else {
             throw new Exception("Folder with same name exists");
@@ -142,6 +151,14 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 
         return existingFilesAfterDeletion;
 
+    }
+
+    @Override
+    public FileContent[] searchFiles(String searchString, String path) {
+
+
+
+        return new FileContent[0];
     }
 
 
