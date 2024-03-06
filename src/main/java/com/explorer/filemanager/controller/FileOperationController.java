@@ -2,6 +2,7 @@ package com.explorer.filemanager.controller;
 
 import com.explorer.filemanager.model.FileContent;
 import com.explorer.filemanager.pojo.ErrorDetails;
+import com.explorer.filemanager.pojo.FileDetails;
 import com.explorer.filemanager.pojo.FileRequestParams;
 import com.explorer.filemanager.pojo.FileResponse;
 import com.explorer.filemanager.service.FileOperationService;
@@ -10,6 +11,8 @@ import com.explorer.filemanager.service.MongoMetadataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
 
 enum Action {
     read,
@@ -60,9 +63,9 @@ public class FileOperationController {
             case read:
                 // request params: String action; String path; Boolean showHiddenItems; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
-
+            try {
                 /** for root folder: path is "/" and data is empty, use workspaceId to find all the child folders  **/
-                if (path.equals("/") && data.length == 0 ) {
+                if (path.equals("/") && data.length == 0) {
                     response.setCwd(mongoMetadataService.getCwd(workspaceId));
                     response.setFiles(mongoMetadataService.getFilesByParentId(workspaceId));
                 } else {
@@ -70,7 +73,15 @@ public class FileOperationController {
                     response.setCwd(mongoMetadataService.getCwd(fileId));
                     response.setFiles(mongoMetadataService.getFilesByParentId(fileId));
                 }
-                break;
+            }   catch (Exception exception){
+                log.error(exception.getLocalizedMessage());
+                response.setError(new ErrorDetails(
+                        "404",
+                        String.format("A file or folder with the name %s may have recently been deleted and no longer exists. Please refresh your browser.", data[0].getName()),
+                        null
+                ));
+            }
+            break;
 
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO - to create path in MINIO and new doc in MONGO atomically **/
@@ -103,12 +114,11 @@ public class FileOperationController {
             /** TRANSACTION TO DELETE FROM MINIO AND MONGO **/
             case delete:
                 // request params: String action; String path; String[] names; FileManagerDirectoryContent data
-                // response: FileManagerDirectoryContent[] files; ErrorDetails error;
-
-
+                // response: FileManagerDirectoryContent[] files (Details about the deleted item(s).); ErrorDetails error;
                 try {
-                    FileContent[] existingFiles = mongoMetadataService.deleteFiles(data);
-                    response.setFiles(existingFiles);
+                    String[] fileNames = requestParams.getNames();
+                    mongoMetadataService.deleteFiles(fileNames, data);
+                    response.setFiles(data);
                 } catch (Exception exception){
                     log.error(exception.getLocalizedMessage());
                     response.setError(new ErrorDetails(
@@ -119,15 +129,36 @@ public class FileOperationController {
                 }
 
 
-
-
-
-
-
             /** READS METADATA FROM MONGO ONLY **/
             case details:
                 // request params: String action; String path; String[] names; FileManagerDirectoryContent data
                 // response: FileManagerDirectoryContent details; ErrorDetails error;
+                FileDetails details = new FileDetails();
+
+                // for multiple files selected
+                if (requestParams.getNames().length > 1) {
+                    String[] fileNamesList = requestParams.getNames();
+                    String fileNames = "";
+                    for (int i = 0 ; i <fileNamesList.length; i++) {
+                        if (i > 0) {
+                            fileNames += ", ";
+                        }
+                        fileNames += fileNamesList[i];
+                    }
+                    details.setMultipleFiles(true);
+                    details.setName(fileNames);
+                    details.setIsFile(false);
+                    details.setLocation(data[0].getFilterPath());
+                } else{
+                    details.setMultipleFiles(false);
+                    details.setLocation(data[0].getFilterPath() + data[0].getName() + "/");
+                    details.setName(data[0].getName());
+                    details.setSize(data[0].getSize().toString());
+                    details.setCreated(data[0].getDateCreated());
+                    details.setModified(data[0].getDateModified());
+                    details.setIsFile(data[0].getIsFile());
+                }
+                response.setDetails(details);
 
             /** READS METADATA FROM MONGO ONLY **/
             case search:

@@ -105,26 +105,26 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
      * @throws Exception
      */
     @Override
-    public FileContent[] deleteFiles(FileContent[] files) throws Exception {
+    public FileContent[] deleteFiles(String[] names, FileContent[] files) throws Exception {
 
         // all files will share same parentId because only files under the same parent folder can be deleted together
         String parentId = files[0].getParentId();
-        List<String> fileNames = new ArrayList<>();
+        String filterPath = files[0].getFilterPath();
+
         List<String> fileIds = new ArrayList<>();
+        List<String> parentFilterPaths = new ArrayList<>();
 
         for (FileContent file : files) {
-            fileNames.add(file.getName());
+
             fileIds.add(file.getMongoId());
+            parentFilterPaths.add(filterPath+file.getName()+"/");
         }
 
-        log.info(fileNames.toString());
-        log.info(fileIds.toString());
-
         Criteria criteria = new Criteria().orOperator(
-            // get selected files with matching fileName and matching parentId
-            Criteria.where("name").in(fileNames).andOperator(Criteria.where("parentId").is(parentId)),
+            // find selected files by filename AND parentId
+            Criteria.where("name").in(names).and("parentId").is(parentId),
             // get child of selected files with child's parentId that matches the mongoId of the files to be deleted
-            Criteria.where("parentId").in(fileIds)
+            Criteria.where("filterPath").in(parentFilterPaths)
         );
 
         Query query = new Query(criteria);
@@ -132,6 +132,14 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
         mongoTemplate.findAllAndRemove(query, FileContent.class);
 
         FileContent[] existingFilesAfterDeletion = repository.findByParentId(parentId);
+
+        // update parentFile to hasChild: false if there are no more child files after removal
+        if (existingFilesAfterDeletion.length == 0) {
+            FileContent parentFolder = repository.findById(new ObjectId(parentId)).get();
+            parentFolder.setHasChild(false);
+            repository.save(parentFolder);
+        }
+
         return existingFilesAfterDeletion;
 
     }

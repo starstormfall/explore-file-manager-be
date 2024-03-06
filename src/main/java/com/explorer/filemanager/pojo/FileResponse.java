@@ -18,7 +18,7 @@ public class FileResponse {
     FileContent[] files;
 
     @Nullable // used only for DETAILS, null for other operations
-    FileContent details;
+    FileDetails details;
 
     ErrorDetails error;
 
