@@ -56,6 +56,7 @@ public class FileOperationController {
         Action action = Action.valueOf(requestParams.getAction());
         String path = requestParams.getPath(); // full path from root to cwd
         FileContent[] data = requestParams.getData();
+        FileContent targetedLocation = requestParams.getTargetData();
 
 
         switch(action) {

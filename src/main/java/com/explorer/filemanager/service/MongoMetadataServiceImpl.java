@@ -17,6 +17,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+enum Action {
+	read,
+	create,
+	rename,
+	delete,
+	details,
+	search,
+	copy,
+	move,
+}
 @Slf4j
 @Service
 public class MongoMetadataServiceImpl implements MongoMetadataService {
@@ -34,23 +44,21 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
     /**
      * Get cwd by id
      * @param fileId
-     * @return
+     * @return metadata of current working directory ELSE null if file does not exist
      */
     @Override
     public FileContent getCwd(String fileId) {
-        FileContent cwd = repository.findById(new ObjectId(fileId)).get();
-        return cwd;
+        return repository.findById(new ObjectId(fileId)).orElse(null);
     }
 
     /**
      * Get all files with parentId
      * @param parentId
-     * @return
+     * @return array of child files' metadata belonging to a parent
      */
     @Override
     public FileContent[] getFilesByParentId(String parentId) {
-        FileContent[] files = repository.findByParentId(parentId);
-        return files;
+        return repository.findByParentId(parentId);
     }
 
     /**
@@ -156,13 +164,10 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 
     @Override
     public FileContent[] searchFiles(String searchString, String path) {
-
-
-
         return new FileContent[0];
     }
 
-public void updateChildPath(FileContent childFile, String oldFileName, String newFileName) {
+	public void updateChildPath(FileContent childFile, String oldFileName, String newFileName) {
 
 		if (childFile != null) {
 			String oldPath = childFile.getFilterPath();
@@ -187,7 +192,6 @@ public void updateChildPath(FileContent childFile, String oldFileName, String ne
 		}
 
 	}
-
 
 
 	public void createChildFolder(FileContent file, String newFileName, String newParentId) {
@@ -230,10 +234,10 @@ public void updateChildPath(FileContent childFile, String oldFileName, String ne
 
 			FileContent selectedFile = repository.findById(new ObjectId(fileId)).get();
 			if (selectedFile.getFilterPath().length() > 0) {
-				FileContent[] exisitingFiles = repository.findByFilterPath(selectedFile.getFilterPath());
+				FileContent[] existingFiles = repository.findByFilterPath(selectedFile.getFilterPath());
 				boolean isExist = false;
-				if (exisitingFiles.length > 0) {
-					for (FileContent existingFile : exisitingFiles) {
+				if (existingFiles.length > 0) {
+					for (FileContent existingFile : existingFiles) {
 						if (existingFile.getName().equals(newName)) {
 							isExist = true;
 							break;
@@ -263,6 +267,8 @@ public void updateChildPath(FileContent childFile, String oldFileName, String ne
 			throw Error;
 		}
 	}
+
+
 
 	@Override
 	public FileContent[] copyAndMoveFiles(FileContent[] files, FileContent targetedLocation, String targetPath,
@@ -360,11 +366,13 @@ public void updateChildPath(FileContent childFile, String oldFileName, String ne
 					targetedLocation.setHasChild(true);
 					repository.save(targetedLocation);
 				}
+			}
 
-			}
-			if (actionType.equals(Action.move)) {
-				deleteFiles(files);
-			}
+
+// FROM HB: `copy` action has names[] in request params as well, can use it for deletion
+//			if (actionType.equals(Action.move)) {
+//				deleteFiles(files);
+//			}
 
 			FileContent[] updatedFiles = Arrays.stream(files).flatMap(file -> {
 				FileContent[] existingFilesAfterUpdate = repository.findByParentId(file.getMongoId());
@@ -377,5 +385,15 @@ public void updateChildPath(FileContent childFile, String oldFileName, String ne
 			throw error;
 		}
 	}
+
+	// ------- HELPER FUNCTIONS ------- //
+	private boolean checkIfSameFileExists() {
+		return false;
+	};
+
+	private boolean checkIfParentExists() {
+		return false;
+	};
+
 
 }
