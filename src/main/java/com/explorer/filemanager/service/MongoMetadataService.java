@@ -9,4 +9,9 @@ public interface MongoMetadataService {
     FileContent[] deleteFiles(String[] names, FileContent[] files) throws Exception;
 
     FileContent[] searchFiles(String searchString, String path);
+
+    FileContent[] renameFile(FileContent[] files, String newName) throws Exception;
+	
+    FileContent[] copyAndMoveFiles(FileContent[] files,FileContent targetedLocation,String targetPath, boolean isRename, String action) throws Exception;
+
 }

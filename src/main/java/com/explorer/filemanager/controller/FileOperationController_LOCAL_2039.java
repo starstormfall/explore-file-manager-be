@@ -9,11 +9,10 @@ import com.explorer.filemanager.service.FileOperationService;
 import com.explorer.filemanager.minio.MongoAndMinioTransactionService;
 import com.explorer.filemanager.service.MongoMetadataService;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Arrays;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
 
 enum Action {
     read,
@@ -118,27 +117,13 @@ public class FileOperationController {
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
             // YX
             case rename:
-			// request params: String action; String path; String name; String newName;
-			// FileManagerDirectoryContent data
-			// response: FileManagerDirectoryContent[] files; ErrorDetails error;
-			String newName = requestParams.getNewName();
-
-			try {
-				FileContent[] renameFiles = mongoMetadataService.renameFile(data, newName);
-				response.setFiles(renameFiles);
-
-			} catch (Exception exception) {
-				log.error(exception.getMessage());
-				response.setError(new ErrorDetails("400", String.format(exception.getMessage()), null));
-			}
-			break;
+                // request params: String action; String path; String name; String newName; FileManagerDirectoryContent data
+                // response: FileManagerDirectoryContent[] files; ErrorDetails error;
 
             /** TRANSACTION TO DELETE FROM MINIO AND MONGO **/
             case delete:
                 // request params: String action; String path; String[] names; FileManagerDirectoryContent data
-                // response: FileManagerDirectoryContent[] files; ErrorDetails error;
-
-
+                // response: FileManagerDirectoryContent[] files (Details about the deleted item(s).); ErrorDetails error;
                 try {
                     String[] fileNames = requestParams.getNames();
                     mongoMetadataService.deleteFiles(fileNames, data);
@@ -199,46 +184,18 @@ public class FileOperationController {
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
             // YX
             case copy:
-			// request params: String action; String path; String[] names; String
-			// targetPath; FileManagerDirectoryContent data; String[] renameFiles
-			// response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[]
-			// files; ErrorDetails error;
-			try {
-				boolean isRename = requestParams.getRenameFiles().length > 0;
-				String targetedPath = requestParams.getTargetPath();
-				FileContent[] copyFiles = mongoMetadataService.copyAndMoveFiles(data, targetedLocation, targetedPath,
-						isRename, requestParams.getAction());
-				response.setFiles(copyFiles);
-			} catch (Exception exception) {
-				log.error(exception.getLocalizedMessage());
-				String[] errorFile = Arrays.stream(data).map(file -> file.getName()).toArray(String[]::new);
-				response.setError(new ErrorDetails("400", exception.getMessage(), errorFile));
-			}
+                // request params: String action; String path; String[] names; String targetPath; FileManagerDirectoryContent data; String[] renameFiles
+                // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
 
-			break;
-		/** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
-		// YX
-		case move:
-			// request params: String action; String path; String[] names; String
-			// targetPath; FileManagerDirectoryContent data; String[] renameFiles
-			// response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[]
-			// files; ErrorDetails error;
-			System.out.println("Moving");
-			try {
-				boolean isRename = requestParams.getRenameFiles().length > 0;
-				String targetedPath = requestParams.getTargetPath();
-				FileContent[] copyFiles = mongoMetadataService.copyAndMoveFiles(data, targetedLocation, targetedPath,
-						isRename, requestParams.getAction());
-				response.setFiles(copyFiles);
-			} catch (Exception exception) {
-				log.error(exception.getLocalizedMessage());
-				String[] errorFile = Arrays.stream(data).map(file -> file.getName()).toArray(String[]::new);
-				response.setError(new ErrorDetails("400", exception.getMessage(), errorFile));
-			}
+            /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
+            // YX
+            case move:
+                // request params: String action; String path; String[] names; String targetPath; FileManagerDirectoryContent data; String[] renameFiles
+                // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[] files; ErrorDetails error;
 
-			break;
-			
-		}
+
+        }
+
         return response;
 
 
