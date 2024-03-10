@@ -28,11 +28,11 @@ public class FileContent  {
     @NonNull private String name; // file name
     @NonNull private String dateCreated; //UTC Date string
     @NonNull private String dateModified; //UTC Date string
-    @NonNull private  String filterPath; // relative path to file or folder (one-level before), "\\" for first folder after root
-    @NonNull private  Boolean hasChild; // true if there is nested folder, false if not
+    @NonNull private String filterPath; // relative path to file or folder (one-level before), "\\" for first folder after root
+    @NonNull private Boolean hasChild; // true if there is nested folder, false if not
     @NonNull private Boolean isFile; // whether item is file or folder
-    @NonNull private  Number size; // file size e.g. 49792
-    @NonNull private  String type; // file extension e.g. ".png",
+    @NonNull private Number size; // file size e.g. 49792
+    @NonNull private String type; // file extension e.g. ".png",
     @NonNull private String parentId; // for root folder, parentId would be bucketId
 
     // --- Optional --- //

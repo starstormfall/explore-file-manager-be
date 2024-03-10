@@ -31,9 +31,9 @@ enum Action {
 @Service
 public class MongoMetadataServiceImpl implements MongoMetadataService {
 
-    private FileContentRepository repository;
+    private final FileContentRepository repository;
 
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
     @Autowired
     public MongoMetadataServiceImpl(FileContentRepository repository, MongoTemplate mongoTemplate) {
@@ -43,7 +43,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 
     /**
      * Get cwd by id
-     * @param fileId
+     * @param fileId mongoId
      * @return metadata of current working directory ELSE null if file does not exist
      */
     @Override
@@ -53,7 +53,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 
     /**
      * Get all files with parentId
-     * @param parentId
+     * @param parentId mongoId of parent folder
      * @return array of child files' metadata belonging to a parent
      */
     @Override
@@ -64,66 +64,60 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
     /**
      * creates a new document (folder entry)
      * updates parent folder to hasChild so that nested folder can show up in frontend tree view
-     * @param folderName
-     * @param parentId
-     * @param path
-     * @return
+     * @param folderName name of new folder to be created
+     * @param parentId mongoId of parent folder to be created in
+     * @param path /path/to/parent
+     * @return details of new folder
      * @throws Exception (i) if parent folder no longer exists (ii) folder with same name already exists with parentId
      */
     @Override
     public FileContent createFolder(String folderName, String parentId, String path) throws Exception {
 
-        // checks if parent folder exists
-        FileContent parentFolder = repository.findById(new ObjectId(parentId)).get();
+		FileContent parentFolder = isParentFolderPresent(parentId, path);
+		if (!isFolderDuplicate(folderName, parentId)) {
+			ObjectId id = new ObjectId();
+			FileContent newFolder = new FileContent(
+					id.toString(),
+					folderName,
+					folderName,
+					Instant.now().toString(),
+					Instant.now().toString(),
+					path,
+					false,
+					false,
+					0,
+					"",
+					parentId // parentId
+			);
 
-        if (parentFolder != null) {
-            parentFolder.setHasChild(true);
-            repository.save(parentFolder);
-        } else {
-            throw new Exception(String.format("Folder %s does not exist.", path));
-        }
+			if (!parentFolder.getHasChild()) {
+				parentFolder.setHasChild(true);
+				repository.save(parentFolder);
+			}
 
-        String folderNameLowerCase = folderName.toLowerCase();
-
-        // checks if folder with same name already exists with parentId
-        Query query = new Query(
-                Criteria.where("parentId").is(parentId)
-                        .and("name").regex("^" + folderNameLowerCase + "$", "i"));
-
-
-
-        if (mongoTemplate.findOne(query, FileContent.class) == null) {
-            ObjectId id = new ObjectId();
-            FileContent newFolder = new FileContent(
-                    id.toString(),
-                    folderName,
-                    folderName,
-                    Instant.now().toString(),
-                    Instant.now().toString(),
-                    path,
-                    false,
-                    false,
-                    0,
-                    "",
-                    parentId // parentId
-            );
-
-            FileContent newFolderData = repository.save(newFolder);
-            return newFolderData;
-        } else {
-            throw new Exception("Folder with same name exists");
-        }
+			return repository.save(newFolder);
+		} else {
+			throw new Exception("Something went wrong");
+		}
     }
 
     /**
      * Delete files given a list of filenames
      * Also deletes the nested folders and files
      * @param files
-     * @return list of remaining files with same parentId after deletion
+     * @return
      * @throws Exception
      */
+	/**
+	 * Delete files given a list of filenames
+	 * Also deletes the nested folders and files
+	 * @param names list of folder names
+	 * @param files list of folder details
+	 * @return list of remaining files with same parentId after deletion
+	 * @throws Exception
+	 */
     @Override
-    public FileContent[] deleteFiles(String[] names, FileContent[] files) throws Exception {
+    public FileContent[] deleteFiles(String[] names, FileContent[] files)  {
 
         // all files will share same parentId because only files under the same parent folder can be deleted together
         String parentId = files[0].getParentId();
@@ -387,13 +381,49 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	}
 
 	// ------- HELPER FUNCTIONS ------- //
-	private boolean checkIfSameFileExists() {
-		return false;
+
+	/**
+	 * Checks if there is an existing folder of same name in the parent folder
+	 * @param folderName folder name
+	 * @param parentId mongoId of parent folder
+	 * @return TRUE if there is an existing folder of same name | FALSE if not
+	 * @throws Exception "Folder/File with same name exists"
+	 */
+	private boolean isFolderDuplicate(String folderName, String parentId) throws Exception {
+		Query query = new Query(Criteria
+				.where("parentId").is(parentId)
+				.and("name").regex("^" + folderName.toLowerCase() + "$", "i"));
+		if (mongoTemplate.findOne(query, FileContent.class) != null){
+			return true;
+		} else {
+			throw new Exception("Folder/File with same name exists");
+		}
 	};
 
-	private boolean checkIfParentExists() {
-		return false;
+
+	/**
+	 * Checks if parent folder still exists before performing operations
+	 * @param parentId  mongoId of parent folder
+	 * @param path /path/to/parent
+	 * @return parentFolder
+	 * @throws Exception "/path/to/parent does not exist."
+	 */
+	private FileContent isParentFolderPresent(String parentId, String path) throws Exception {
+		FileContent parentFolder = repository.findById(new ObjectId(parentId)).orElse(null);
+		if (parentFolder != null) {
+			return parentFolder;
+		} else {
+			throw new Exception(String.format("%s does not exist.", path));
+		}
 	};
 
+
+
+	private List<FileContent> getChildFolders(String filterPath) {
+		Query query = new Query(Criteria.where("filterPath").regex("^" + filterPath));
+
+
+		return mongoTemplate.find(query, FileContent.class);
+	}
 
 }
