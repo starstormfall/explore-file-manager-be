@@ -169,9 +169,9 @@ public class FileOperationController {
 
             /** READS METADATA FROM MONGO ONLY **/
             case search:
-                FileContent topFolder = new FileContent();
+                FileContent cwd = mongoMetadataService.getCwd(path);
                 List<FileContent> foundFiles = mongoMetadataService.searchFiles(requestParams.getSearchString(), path);
-                response.setCwd(topFolder);
+                response.setCwd(cwd);
                 response.setFiles(foundFiles);
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/

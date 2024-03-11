@@ -20,11 +20,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class MongoMetadataServiceImpl implements MongoMetadataService {
-
     private final FileContentRepository repository;
-
     private final MongoTemplate mongoTemplate;
-
     @Autowired
     public MongoMetadataServiceImpl(FileContentRepository repository, MongoTemplate mongoTemplate) {
         this.repository = repository;
@@ -396,8 +393,8 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 //		}
 //	}
 
-	/** ------- HELPER FUNCTIONS ------- */
-
+	/** ------------------------------------------------------------------------------------------------- */
+	// ------- HELPER FUNCTIONS ------- //
 	/**
 	 * Checks if there is an existing folder of same name in the parent folder
 	 * @param folderName folder name
