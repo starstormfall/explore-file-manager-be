@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping(path="api/v1/admin/mongo")
 public class MongoMetadataController {
@@ -25,7 +27,7 @@ public class MongoMetadataController {
     }
 
     @GetMapping("/files/{parentId}")
-    public FileContent[] getFilesByParentId(@PathVariable("parentId") String id) {
+    public List<FileContent> getFilesByParentId(@PathVariable("parentId") String id) {
         return mongoMetadataService.getFilesByParentId(id);
     }
 

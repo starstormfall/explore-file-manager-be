@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -15,7 +17,7 @@ public class FileResponse {
     @Nullable // used only for READ, SEARCH, null for other operations
     FileContent cwd;
 
-    FileContent[] files;
+    List<FileContent> files;
 
     @Nullable // used only for DETAILS, null for other operations
     FileDetails details;

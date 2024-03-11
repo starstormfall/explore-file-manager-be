@@ -5,10 +5,12 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface FileContentRepository extends MongoRepository<FileContent, ObjectId> {
 
-    FileContent[] findByParentId(String parentId);
+    List<FileContent> findByParentId(String parentId);
     FileContent findByMongoId(String mongoId);
-    FileContent[] findByFilterPath(String pathName);
+    List<FileContent> findByFilterPath(String pathName);
 }

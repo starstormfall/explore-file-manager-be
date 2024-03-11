@@ -5,16 +5,18 @@ import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class FileRequestParams {
     String action;
     String path;  // full path to current cwd
-    FileContent[] data;
+    List<FileContent> data;
     String[] renameFiles;
     FileContent targetData;
     String targetPath;
-    
+
     @Nullable Boolean showHiddenItems;
     @Nullable String newName;
     @Nullable String[] names;
