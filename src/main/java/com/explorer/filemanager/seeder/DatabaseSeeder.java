@@ -45,18 +45,88 @@ public class DatabaseSeeder implements CommandLineRunner {
             for (int i = 0; i < 13; i++) {
                 objectIdList.add(new ObjectId());
             }
-            ObjectId id0 = new ObjectId();
-            ObjectId id1 = new ObjectId();
-            ObjectId id2 = new ObjectId();
-            ObjectId id3 = new ObjectId();
+
 
             String workspaceName = faker.cat().breed();
-            String firstFolderName = faker.cat().name();
-            String secondFolderName = faker.cat().name();
+
+            List<String> mainFolderName = new ArrayList<>(3);
+            List<FileContent> mainFolders = new ArrayList<>(3);
+            for (int i = 1; i < 4; i++) {
+                String folderName = faker.cat().name();
+                mainFolders.add(new FileContent(
+                        objectIdList.get(i).toString(),
+                        folderName,
+                        folderName,
+                        faker.date().past(5, TimeUnit.DAYS).toInstant().toString(),
+                        faker.date().past(1, TimeUnit.DAYS).toInstant().toString(),
+                        workspaceName+"/",
+                        true,
+                        false,
+                        0,
+                        "",
+                        objectIdList.get(0).toString() // parentId
+                ));
+                mainFolderName.add(folderName);
+            }
+
+            List<String> firstLevelNestFolderName = new ArrayList<>(3);
+            List<FileContent> firstLevelNestedFolders = new ArrayList<>(3);
+            for (int i = 4; i < 7; i++) {
+                String folderName = faker.color().name();
+                firstLevelNestedFolders.add(new FileContent(
+                        objectIdList.get(i).toString(),
+                        folderName,
+                        folderName,
+                        faker.date().past(5, TimeUnit.DAYS).toInstant().toString(),
+                        faker.date().past(1, TimeUnit.DAYS).toInstant().toString(),
+                        workspaceName+"/"+mainFolderName.get(i-4)+"/",
+                        (i != 6) ? true : false,
+                        false,
+                        0,
+                        "",
+                        objectIdList.get(i-3).toString() // parentId
+                ));
+                firstLevelNestFolderName.add(folderName);
+            }
+
+            List<String> secondLevelNestFolderName = new ArrayList<>(2);
+            List<FileContent> secondLevelNestedFolders = new ArrayList<>(2);
+            for (int i = 7; i < 9; i++) {
+                String folderName = faker.color().name();
+                secondLevelNestedFolders.add(new FileContent(
+                        objectIdList.get(i).toString(),
+                        folderName,
+                        folderName,
+                        faker.date().past(5, TimeUnit.DAYS).toInstant().toString(),
+                        faker.date().past(1, TimeUnit.DAYS).toInstant().toString(),
+                        workspaceName+"/"+mainFolderName.get(i-7)+"/"+firstLevelNestFolderName.get(i-7)+"/",
+                        (i == 7) ? true : false,
+                        false,
+                        0,
+                        "",
+                        objectIdList.get(i-3).toString() // parentId
+                ));
+                secondLevelNestFolderName.add(folderName);
+            }
+
+            FileContent thirdLevelNestedFolder = new FileContent(
+                    objectIdList.get(9).toString(),
+                    faker.friends().character().toString(),
+                    faker.friends().character().toString(),
+                    faker.date().past(5, TimeUnit.DAYS).toInstant().toString(),
+                    faker.date().past(1, TimeUnit.DAYS).toInstant().toString(),
+                    workspaceName+"/"+mainFolderName.get(0)+"/"+firstLevelNestFolderName.get(0)+"/"+secondLevelNestFolderName.get(0)+"/",
+                    false,
+                    false,
+                    0,
+                    "",
+                    objectIdList.get(7).toString() // parentId
+            );
+
 
             // root folder
             FileContent rootFolder = new FileContent(
-                    id0.toString(),
+                    objectIdList.get(0).toString(),
                     workspaceName,
                     workspaceName,
                     faker.date().past(5, TimeUnit.DAYS).toString(),
@@ -69,62 +139,15 @@ public class DatabaseSeeder implements CommandLineRunner {
                     ""
             );
 
-            // nested folder in first folder
-            FileContent firstNestedFolder = new FileContent(
-                    id3.toString(),
-                    "Nested",
-                    "Nested",
-                    faker.date().past(5, TimeUnit.DAYS).toInstant().toString(),
-                    faker.date().past(1, TimeUnit.DAYS).toInstant().toString(),
-                    workspaceName+"/"+firstFolderName+"/",
-                    false,
-                    false,
-                    0,
-                    "",
-                    id1.toString() // parentId
-            );
 
-            // first folder
-            FileContent firstFolder = new FileContent(
-                    id1.toString(),
-                    firstFolderName,
-                    firstFolderName,
-                    faker.date().past(5, TimeUnit.DAYS).toInstant().toString(),
-                    faker.date().past(1, TimeUnit.DAYS).toInstant().toString(),
-                    workspaceName+"/",
-                    true,
-                    false,
-                    0,
-                    "",
-                    id0.toString() // parentId
-            );
-            firstFolder.setData(firstNestedFolder);
+            List<FileContent> files = new ArrayList<>();
+            files.add(rootFolder);
+            files.addAll(mainFolders);
+            files.addAll(firstLevelNestedFolders);
+            files.addAll(secondLevelNestedFolders);
+            files.add(thirdLevelNestedFolder);
 
-            // second folder
-            FileContent secondFolder = new FileContent(
-                    id2.toString(),
-                    secondFolderName,
-                    secondFolderName,
-                    faker.date().past(5, TimeUnit.DAYS).toInstant().toString(),
-                    faker.date().past(1, TimeUnit.DAYS).toInstant().toString(),
-                    workspaceName+"/",
-                    false,
-                    false,
-                    0,
-                    "",
-                    id0.toString() // parentId
-            );
-
-            FileContent[] files = {
-                    rootFolder,
-                    firstFolder,
-                    secondFolder,
-                    firstNestedFolder
-            };
-
-
-
-            repository.saveAll(Arrays.asList(files));
+            repository.saveAll(files);
         } else {
             log.info("FileContent collection already exists");
         }

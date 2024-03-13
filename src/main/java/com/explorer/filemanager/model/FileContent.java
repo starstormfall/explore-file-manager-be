@@ -24,7 +24,7 @@ public class FileContent  {
     @Id
     @NonNull private String mongoId;  // unique identifier of file/folder
     // --- CORE --- //
-    @NonNull private String id; // to be same as file name - used by frontend to generate path
+    @NonNull private String id; // same as file name - required and used by frontend to generate full path from root folder (without id, all root folders will just be "/")
     @NonNull private String name; // file name
     @NonNull private String dateCreated; //UTC Date string
     @NonNull private String dateModified; //UTC Date string

@@ -137,7 +137,7 @@ public class FileOperationController {
                             null
                     ));
                 }
-
+                break;
 
             /** READS METADATA FROM MONGO ONLY **/
             case details:
@@ -166,13 +166,16 @@ public class FileOperationController {
                     details.setIsFile(data.get(0).getIsFile());
                 }
                 response.setDetails(details);
+                break;
 
             /** READS METADATA FROM MONGO ONLY **/
             case search:
-                FileContent cwd = mongoMetadataService.getCwd(path);
+                FileContent cwd = mongoMetadataService.getCwd(data.get(0).getMongoId());
+//                String searchString = (requestParams.getSearchString() == null ? "" : requestParams.getSearchString());
                 List<FileContent> foundFiles = mongoMetadataService.searchFiles(requestParams.getSearchString(), path);
                 response.setCwd(cwd);
                 response.setFiles(foundFiles);
+                break;
 
             /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
             // YX
@@ -193,40 +196,29 @@ public class FileOperationController {
 //				response.setError(new ErrorDetails("400", exception.getMessage(), errorFile));
 			}
 
-			break;
-		/** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
-		// YX
-		case move:
-			// request params: String action; String path; String[] names; String
-			// targetPath; FileManagerDirectoryContent data; String[] renameFiles
-			// response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[]
-			// files; ErrorDetails error;
-			System.out.println("Moving");
-			try {
-//				boolean isRename = requestParams.getRenameFiles().length > 0;
-//				String targetedPath = requestParams.getTargetPath();
-//				FileContent[] copyFiles = mongoMetadataService.copyAndMoveFiles(data, targetedLocation, targetedPath,
-//						isRename, requestParams.getAction());
-//				response.setFiles(copyFiles);
-			} catch (Exception exception) {
-//				log.error(exception.getLocalizedMessage());
-//				String[] errorFile = Arrays.stream(data).map(file -> file.getName()).toArray(String[]::new);
-//				response.setError(new ErrorDetails("400", exception.getMessage(), errorFile));
-			}
+			    break;
+            /** TRANSACTION TO UPLOAD TO MINIO AND UPDATE MONGO **/
+            // YX
+            case move:
+                // request params: String action; String path; String[] names; String
+                // targetPath; FileManagerDirectoryContent data; String[] renameFiles
+                // response: FileManagerDirectoryContent cwd; FileManagerDirectoryContent[]
+                // files; ErrorDetails error;
+                System.out.println("Moving");
+                try {
+    //				boolean isRename = requestParams.getRenameFiles().length > 0;
+    //				String targetedPath = requestParams.getTargetPath();
+    //				FileContent[] copyFiles = mongoMetadataService.copyAndMoveFiles(data, targetedLocation, targetedPath,
+    //						isRename, requestParams.getAction());
+    //				response.setFiles(copyFiles);
+                } catch (Exception exception) {
+    //				log.error(exception.getLocalizedMessage());
+    //				String[] errorFile = Arrays.stream(data).map(file -> file.getName()).toArray(String[]::new);
+    //				response.setError(new ErrorDetails("400", exception.getMessage(), errorFile));
+                }
 
-			break;
-			
+                break;
 		}
         return response;
-
-
-
-
-
     }
-
-
-
-
-
 }

@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,9 +35,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
      * @return metadata of current working directory ELSE null if file does not exist
      */
     @Override
-    public FileContent getCwd(String fileId) {
-        return repository.findById(new ObjectId(fileId)).orElse(null);
-    }
+    public FileContent getCwd(String fileId) { return repository.findByMongoId(fileId); }
 
     /**
      * Get all files with parentId
@@ -61,9 +60,9 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	@Transactional(rollbackFor = Exception.class)
 	@Override
     public FileContent createFolder(String folderName, String parentId, String path) throws Exception {
-
-		FileContent parentFolder = isParentFolderPresent(parentId, path);
-		if (parentFolder != null && isFolderDuplicate(folderName, parentId) != true) {
+		log.info("did create run?");
+		FileContent parentFolder = getParentFolder(parentId, path);
+		if (!isFolderDuplicate(folderName, parentId)) {
 			ObjectId id = new ObjectId();
 			FileContent newFolder = new FileContent(
 					id.toString(),
@@ -87,7 +86,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 
 			return repository.save(newFolder);
 		} else {
-			throw new Exception("Something went wrong");
+			throw new Exception("Folder/File with same name already exists!");
 		}
     }
 
@@ -102,8 +101,12 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	@Transactional(rollbackFor = Exception.class)
 	@Override
 	public FileContent renameFile(FileContent file, String newName) throws Exception {
-		FileContent parentFolder = isParentFolderPresent(file.getParentId(), file.getFilterPath());
-		if (parentFolder != null && isFolderDuplicate(newName, file.getParentId()) != true) {
+
+		// if file, just rename file
+		// if folder, also rename descendants filterPath
+
+		FileContent parentFolder = getParentFolder(file.getParentId(), file.getFilterPath());
+		if (parentFolder != null && !isFolderDuplicate(newName, file.getParentId())) {
 			file.setName(newName);
 			file.setNewName(newName);
 			file.setDateModified(String.valueOf(Instant.now()));
@@ -139,7 +142,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
         for (FileContent file : files) {
 			// get all children folders of selected file and remove them first
 			List<String> childrenFolderIds = getDescendantFileIds(file.getFilterPath() + file.getName());
-			Query query = new Query(Criteria.where("id").in(childrenFolderIds));
+			Query query = new Query(Criteria.where("mongoId").in(childrenFolderIds));
 			mongoTemplate.remove(query, FileContent.class);
 			// remove selected file
 			mongoTemplate.remove(file, "FileContent");
@@ -147,7 +150,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 
 		// all files to be deleted share same parentId and filterPath because only files under the same parent folder can be deleted together
 		String parentId = files.get(0).getParentId();
-		FileContent parentFolder = repository.findById(new ObjectId(parentId)).get();
+		FileContent parentFolder = repository.findByMongoId(parentId);
         List<FileContent> existingFilesAfterDeletion = repository.findByParentId(parentId);
         // update parentFile to hasChild: false if there is no children folder after removal
         if (existingFilesAfterDeletion.size() == 0) {
@@ -159,27 +162,124 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
         return existingFilesAfterDeletion;
     }
 
+
+	/**
+	 * Searches the current working directory for files/folders with
+	 * @param searchString received by frontend by default between *: "*searchString*"
+	 * @param filterPath current working directory
+	 * @return list of matched files/folders
+	 */
     @Override
     public List<FileContent> searchFiles(String searchString, String filterPath) {
-		Criteria criteria = new Criteria().andOperator(
-				Criteria.where("filterPath").is(filterPath),
-				Criteria.where("name").regex(".*" + searchString + ".*", "i")
-		);
-		Query query = new Query(criteria);
+		String sanitizedSearchString = searchString.substring(1, searchString.length() -1);
+		Query query = new Query();
+		if (sanitizedSearchString.equals("*")) {
+			query.addCriteria(Criteria.where("filterPath").regex(sanitizeForRegex(filterPath), "i"));
+		} else {
+			query.addCriteria(
+					new Criteria().andOperator(
+					Criteria.where("filterPath").is(filterPath),
+					Criteria.where("name").regex(sanitizeForRegex(sanitizedSearchString), "i")
+			));
+		}
 		return mongoTemplate.find(query, FileContent.class);
     }
 
+	/**
+	 * Create new copied files/folders duplicated from another location
+	 * @param names
+	 * @param files
+	 * @param targetedLocation
+	 * @param targetPath
+	 * @param isRename
+	 * @param action
+	 * @return
+	 * @throws Exception
+	 */
 	@Override
 	public List<FileContent> copyFiles(String[] names, List<FileContent> files, FileContent targetedLocation, String targetPath, boolean isRename, String action) throws Exception {
 		return null;
 	}
 
+	/**
+	 * Move files/folders when they are CUT and pasted (similar to rename)
+	 * @param names
+	 * @param files
+	 * @param targetedLocation
+	 * @param targetPath
+	 * @param isRename
+	 * @param action
+	 * @return
+	 * @throws Exception
+	 */
 	@Override
 	public List<FileContent> moveFiles(String[] names, List<FileContent> files, FileContent targetedLocation, String targetPath, boolean isRename, String action) throws Exception {
 		return null;
 	}
 
-//	public void updateChildPath(FileContent childFile, String oldFileName, String newFileName) {
+	// ------- HELPER FUNCTIONS ------- //
+	/**
+	 * Checks if there is an existing folder of same name in the parent folder
+	 * @param folderName folder name
+	 * @param parentId mongoId of parent folder
+	 * @return TRUE if there is an existing folder of same name | FALSE if not
+	 * @throws Exception "Folder/File with same name exists"
+	 */
+	private boolean isFolderDuplicate(String folderName, String parentId) {
+		Query query = new Query(Criteria.where("parentId").is(parentId).and("name").is(folderName));
+		if (mongoTemplate.findOne(query, FileContent.class) != null){
+			return true;
+		} else {
+			return false;
+		}
+	};
+
+	/**
+	 * Checks if parent folder still exists before performing operations
+	 * @param parentId  mongoId of parent folder
+	 * @param path /path/to/parent
+	 * @return parentFolder
+	 * @throws Exception "/path/to/parent does not exist."
+	 */
+	private FileContent getParentFolder(String parentId, String path) throws Exception {
+		FileContent parentFolder = repository.findById(new ObjectId(parentId)).orElse(null);
+		if (parentFolder != null) {
+			return parentFolder;
+		} else {
+			throw new Exception(String.format("%s does not exist.", path));
+		}
+	};
+
+	/**
+	 * Gets mongoIds of all children and children's folder with same parent path (filterPath)
+	 * @param filterPath relative path of the child folder
+	 * @return list of children folders' mongoIds
+	 */
+	private List<String> getDescendantFileIds(String filterPath) {
+		Query query = new Query(Criteria.where("filterPath").regex(sanitizeForRegex(filterPath)));
+		List<FileContent> childrenFolders = mongoTemplate.find(query, FileContent.class);
+		return childrenFolders.stream()
+				.map(FileContent::getMongoId)
+				.collect(Collectors.toList());
+	}
+
+
+	/**
+	 * Adds backslash to escape special characters
+	 * @param string relative path of the child folder
+	 * @return sanitized string suitable for regex query
+	 */
+	private String sanitizeForRegex(String string) {
+		String specialCharacters = "[()*]";
+		String sanitizedString = string.replaceAll(specialCharacters, "\\\\$0");
+		log.info(String.format("string: %s", string));
+		log.info(String.format("sanitized: %s", sanitizedString));
+		return sanitizedString;
+	}
+
+
+
+	//	public void updateChildPath(FileContent childFile, String oldFileName, String newFileName) {
 //
 //		if (childFile != null) {
 //			String oldPath = childFile.getFilterPath();
@@ -392,53 +492,5 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 //			throw error;
 //		}
 //	}
-
-	/** ------------------------------------------------------------------------------------------------- */
-	// ------- HELPER FUNCTIONS ------- //
-	/**
-	 * Checks if there is an existing folder of same name in the parent folder
-	 * @param folderName folder name
-	 * @param parentId mongoId of parent folder
-	 * @return TRUE if there is an existing folder of same name | FALSE if not
-	 * @throws Exception "Folder/File with same name exists"
-	 */
-	private boolean isFolderDuplicate(String folderName, String parentId) {
-		Query query = new Query(Criteria.where("parentId").is(parentId).and("name").is(folderName));
-		if (mongoTemplate.findOne(query, FileContent.class) != null){
-			return true;
-		} else {
-			return false;
-		}
-	};
-
-	/**
-	 * Checks if parent folder still exists before performing operations
-	 * @param parentId  mongoId of parent folder
-	 * @param path /path/to/parent
-	 * @return parentFolder
-	 * @throws Exception "/path/to/parent does not exist."
-	 */
-	private FileContent isParentFolderPresent(String parentId, String path) throws Exception {
-		FileContent parentFolder = repository.findById(new ObjectId(parentId)).orElse(null);
-		if (parentFolder != null) {
-			return parentFolder;
-		} else {
-			throw new Exception(String.format("%s does not exist.", path));
-		}
-	};
-
-	/**
-	 * Gets mongoIds of all children and children's folder with same parent path (filterPath)
-	 * @param filterPath relative path of the child folder
-	 * @return list of children folders' mongoIds
-	 */
-	private List<String> getDescendantFileIds(String filterPath) {
-		Query query = new Query(Criteria.where("filterPath").regex("^" + filterPath + ".*"));
-		List<FileContent> childrenFolders = mongoTemplate.find(query, FileContent.class);
-		return childrenFolders.stream()
-				.map(FileContent::getMongoId)
-				.collect(Collectors.toList());
-	}
-
 
 }
