@@ -3,6 +3,7 @@ package com.explorer.filemanager.service;
 import com.explorer.filemanager.model.FileContent;
 import com.explorer.filemanager.repository.FileContentRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -60,7 +61,6 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	@Transactional(rollbackFor = Exception.class)
 	@Override
     public FileContent createFolder(String folderName, String parentId, String path) throws Exception {
-		log.info("did create run?");
 		FileContent parentFolder = getParentFolder(parentId, path);
 		if (!isFolderDuplicate(folderName, parentId)) {
 			ObjectId id = new ObjectId();
@@ -74,7 +74,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 					false,
 					false,
 					0,
-					"",
+					"Folder",
 					parentId // parentId
 			);
 
@@ -101,32 +101,44 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	@Transactional(rollbackFor = Exception.class)
 	@Override
 	public FileContent renameFile(FileContent file, String newName) throws Exception {
-
-		// if file, just rename file
-		// if folder, also rename descendants filterPath
-
 		FileContent parentFolder = getParentFolder(file.getParentId(), file.getFilterPath());
+		String oldName = file.getName();
 		if (parentFolder != null && !isFolderDuplicate(newName, file.getParentId())) {
 			file.setName(newName);
+			file.setId(newName);
+
+
 			file.setNewName(newName);
 			file.setDateModified(String.valueOf(Instant.now()));
 
-			// update the filterPath of all children and children's files
-			String descendantFilterPath = file.getFilterPath()+file.getName();
-			String newDescendantFilterPath = file.getFilterPath()+newName;
-			List<String> childrenFileIds = getDescendantFileIds(descendantFilterPath);
-			String regexPattern = "^" + descendantFilterPath + ".*";
+			// if folder, also rename descendants filterPath
+			if (file.getType().equals("Folder")) {
+				String descendantFilterPath = file.getFilterPath()+oldName+"/";
+				String renamedDescendantFilterPath = file.getFilterPath()+newName+"/";
+				List<String> childrenFileIds = getDescendantFileIds(descendantFilterPath);
 
-			Query query = new Query(Criteria.where("filterPath").regex(regexPattern, "i").and("mongoId").in(childrenFileIds));
-			Update update = new Update().set("filterPath", mongoTemplate.getCollectionName(FileContent.class).replaceAll(regexPattern, newDescendantFilterPath));
+				log.info(String.format("desc: %s", descendantFilterPath));
+				log.info(String.format("rename desc: %s", renamedDescendantFilterPath));
 
-			mongoTemplate.updateMulti(query, update, FileContent.class);
+				log.info(String.format(String.valueOf(childrenFileIds)));
 
+				Query query = new Query(Criteria.where("mongoId").in(childrenFileIds));
+
+				Update update = new Update().set("filterPath",
+						new Document("$regexReplace",
+								new Document("filterPath", "$filterPath")
+										.append("regex", sanitizeForRegex(descendantFilterPath))
+										.append("replacement", sanitizeForRegex(renamedDescendantFilterPath))
+						)
+				);
+
+
+				mongoTemplate.updateMulti(query, update, FileContent.class);
+			}
 			return repository.save(file);
 		} else {
 			throw new Exception("Something went wrong...");
 		}
-
 	}
 
 	/**
@@ -256,6 +268,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	 * @return list of children folders' mongoIds
 	 */
 	private List<String> getDescendantFileIds(String filterPath) {
+		log.info(String.format("filterPath: %s", filterPath));
 		Query query = new Query(Criteria.where("filterPath").regex(sanitizeForRegex(filterPath)));
 		List<FileContent> childrenFolders = mongoTemplate.find(query, FileContent.class);
 		return childrenFolders.stream()
@@ -270,7 +283,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	 * @return sanitized string suitable for regex query
 	 */
 	private String sanitizeForRegex(String string) {
-		String specialCharacters = "[()*]";
+		String specialCharacters = "[()*],";
 		String sanitizedString = string.replaceAll(specialCharacters, "\\\\$0");
 		log.info(String.format("string: %s", string));
 		log.info(String.format("sanitized: %s", sanitizedString));

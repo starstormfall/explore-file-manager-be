@@ -63,7 +63,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                         true,
                         false,
                         0,
-                        "",
+                        "Folder",
                         objectIdList.get(0).toString() // parentId
                 ));
                 mainFolderName.add(folderName);
@@ -83,7 +83,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                         (i != 6) ? true : false,
                         false,
                         0,
-                        "",
+                        "Folder",
                         objectIdList.get(i-3).toString() // parentId
                 ));
                 firstLevelNestFolderName.add(folderName);
@@ -103,7 +103,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                         (i == 7) ? true : false,
                         false,
                         0,
-                        "",
+                        "Folder",
                         objectIdList.get(i-3).toString() // parentId
                 ));
                 secondLevelNestFolderName.add(folderName);
@@ -119,7 +119,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     false,
                     false,
                     0,
-                    "",
+                    "Folder",
                     objectIdList.get(7).toString() // parentId
             );
 
@@ -135,7 +135,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     true,
                     false,
                     0,
-                    "",
+                    "Folder",
                     ""
             );
 
