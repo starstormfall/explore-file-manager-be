@@ -11,7 +11,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,7 +24,6 @@ import java.util.stream.Collectors;
 public class MongoMetadataServiceImpl implements MongoMetadataService {
 	private final FileContentRepository repository;
 	private final MongoTemplate mongoTemplate;
-
 	@Autowired
 	public MongoMetadataServiceImpl(FileContentRepository repository, MongoTemplate mongoTemplate) {
 		this.repository = repository;
@@ -139,7 +140,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	public List<FileContent> deleteFiles(String[] names, List<FileContent> files) {
 		for (FileContent file : files) {
 			// get all children folders of selected file and remove them first
-			List<String> childrenFolderIds = getDescendantFileIds(file.getFilterPath() + file.getName());
+			List<String> childrenFolderIds = getDescendantFileIds(file.getFilterPath() + file.getName()+"/");
 			Query query = new Query(Criteria.where("mongoId").in(childrenFolderIds));
 			mongoTemplate.remove(query, FileContent.class);
 			// remove selected file
@@ -194,17 +195,27 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	 * @param targetData  new destination filterPath
 	 * @param renameFiles list of file/folder names to be renamed because same name already exists
 	 * @return list of new file/folder content successfully copied
-	 * @throws Exception
+	 * @throws Exception if parent folder no longer exists
 	 */
 	@Transactional(rollbackFor = Exception.class)
 	@Override
 	public List<FileContent> copyFiles(String[] names, List<FileContent> files, String oldPath, String targetPath, FileContent targetData, String[] renameFiles) throws Exception {
+		getParentFolder(files.get(0).getParentId(), files.get(0).getFilterPath());
 		boolean isRename = renameFiles.length > 0;
+		List<FileContent> copiedFiles = new ArrayList<>();
 
 		for (FileContent file: files) {
-			FileContent newCopy = createNewCopy(isRename, file, targetPath, targetData.getMongoId());
+			// create new parent copy
+			FileContent newParentCopy = createNewCopy(isRename, file, targetPath, targetData.getMongoId());
+			copiedFiles.add(newParentCopy);
+
+			String parentId = newParentCopy.getMongoId();
+			String newPath = newParentCopy.getFilterPath() + newParentCopy.getName() + "/";
+
+			List<FileContent> children = repository.findByParentId(file.getMongoId());
+			copyChildrenRecursively(children, newPath, parentId);
 		}
-		return null;
+		return copiedFiles;
 	}
 
 	/**
@@ -223,7 +234,12 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	public List<FileContent> moveFiles(String[] names, List<FileContent> files, String oldPath, String targetPath, FileContent targetData, String[] renameFiles) throws Exception {
 		getParentFolder(files.get(0).getParentId(), files.get(0).getFilterPath());
 		boolean isRename = renameFiles.length > 0;
+
 		for (FileContent file: files) {
+
+			// TODO: allow for rename if file/folder of same name exists, throw exception?
+			if (isFolderDuplicate(file.getName(), file.getParentId())) {}
+
 			if (isRename) {
 				String fileName = renameFileWithIncrementNumber(file.getName());
 				file.setName(fileName);
@@ -236,7 +252,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 			}
 			repository.save(file);
 
-			List<String> descendantIds = getDescendantFileIds(oldPath);
+			List<String> descendantIds = getDescendantFileIds(oldPath + file.getName() + "/");
 			updateDescendantFilterPath(descendantIds, oldPath, targetPath);
 		}
 		return files;
@@ -306,7 +322,7 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	 * @return sanitized string suitable for regex query
 	 */
 	private String sanitizeForRegex(String string) {
-		//TODO: Fix bug where special characters like ( ) [ ] ** throws error
+		// TODO: Fix bug where special characters like ( ) [ ] ** throws error
 		String specialCharacters = "[()*],";
 		String sanitizedString = string.replaceAll(specialCharacters, "\\\\$0");
 		log.info(String.format("string: %s", string));
@@ -352,7 +368,6 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 		return fileName;
 	}
 
-
 	/**
 	 * Creates new copy of existing file
 	 *
@@ -367,7 +382,6 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 		if (isRename) {
 			renameFileWithIncrementNumber(fileName);
 		}
-
 		ObjectId id = new ObjectId();
 		FileContent newCopy =  new FileContent(
 				id.toString(),
@@ -383,5 +397,19 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 				parentId // parentId
 		);
         return repository.save(newCopy);
+	}
+
+
+	public void copyChildrenRecursively(List<FileContent> files, String filterPath, String parentId) {
+		for (FileContent file: files) {
+			FileContent parentCopy = createNewCopy(false, file, filterPath, parentId);
+			if (file.getHasChild()) {
+				String parentCopyId = parentCopy.getMongoId();
+				String newPath = parentCopy.getFilterPath() + parentCopy.getName() + "/";
+				List<FileContent> children = repository.findByParentId(file.getMongoId());
+				copyChildrenRecursively(children, newPath, parentCopyId);
+			}
+			repository.save(parentCopy);
+		}
 	}
 }

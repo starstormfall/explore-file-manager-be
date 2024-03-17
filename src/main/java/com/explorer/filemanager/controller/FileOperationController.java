@@ -127,7 +127,7 @@ public class FileOperationController {
 
             /** TRANSACTION TO DELETE FROM MINIO AND MONGO **/
             case delete:
-                try {;
+                try {
                     mongoMetadataService.deleteFiles(fileNames, data);
                     response.setFiles(data);
                 } catch (Exception exception){
