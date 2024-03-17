@@ -400,6 +400,13 @@ public class MongoMetadataServiceImpl implements MongoMetadataService {
 	}
 
 
+	/**
+	 * Creates new copy of children files/folders recursively
+	 *
+	 * @param files list of children files to delve into
+	 * @param filterPath new filterPath from parent copy
+	 * @param parentId new parentId from parent copy
+	 */
 	public void copyChildrenRecursively(List<FileContent> files, String filterPath, String parentId) {
 		for (FileContent file: files) {
 			FileContent parentCopy = createNewCopy(false, file, filterPath, parentId);
